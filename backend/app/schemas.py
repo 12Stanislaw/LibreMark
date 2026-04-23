@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from typing import List, Optional
 
 class UserCreate(BaseModel):
     login: str = Field(
@@ -32,8 +33,14 @@ class UserResponse(BaseModel):
 
 
 class BookResponse(BaseModel):
-    title : str
-    author : str
-    first_publish_year: int
-    language : str
-    details : str
+    isbn: str
+    title: str
+    authors: List[str] = []
+    publish_date: Optional[str] = "N/A"
+    languages: List[str] = []
+    synopsis: Optional[str] = "No description"
+    cover: Optional[str] = None
+    pages: Optional[int] = None
+
+    class Config:
+        from_attributes = True

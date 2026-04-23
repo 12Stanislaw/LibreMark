@@ -7,7 +7,7 @@ load_dotenv()
 URL = os.getenv("OL_URL")
 http_client = httpx.AsyncClient(timeout=10.0)
 
-#Отримуємо key книги за назвою
+#Отримуємо isbn книги за назвою
 async def get_by_title(title: str):
     # 1. Формуємо URL та параметри
     # Використовуємо q= замість title= для ширшого пошуку, якщо назва неточна
@@ -56,5 +56,41 @@ async def get_by_title(title: str):
         raise HTTPException(status_code=504, detail="Сервер Open Library не відповів вчасно")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Внутрішня помилка: {str(e)}")
-async def get_book_by_key(key : str):
-    ...
+
+async def get_book_by_isbn(isbn: str):
+    # Використовуємо Books API для отримання детальної інформації
+    url = "https://openlibrary.org/api/books"
+    params = {
+        "bibkeys": f"ISBN:{isbn}",
+        "format": "json",
+        "jscmd": "data"
+    }
+
+    try:
+        response = await http_client.get(url, params=params)
+        
+        if response.status_code != 200:
+            return {"isbn": isbn, "title": "Помилка API", "authors": ["Невідомо"]}
+
+        data = response.json()
+        book_key = f"ISBN:{isbn}"
+
+        if book_key not in data:
+            # Якщо даних про книгу немає в Books API, повертаємо базову інфу
+            return {"isbn": isbn, "title": "Дані відсутні", "authors": ["N/A"], "synopsis": "Опис відсутній"}
+
+        book_data = data[book_key]
+
+        return {
+            "isbn": isbn,
+            "title": book_data.get("title", "Без назви"),
+            "authors": [a.get("name") for a in book_data.get("authors", [])],
+            "publish_date": str(book_data.get("publish_date", "N/A")),
+            "languages": [l.get("name") for l in book_data.get("languages", [])],
+            "synopsis": book_data.get("notes") or "Опис недоступний",
+            "cover": book_data.get("cover", {}).get("large"),
+            "pages": book_data.get("number_of_pages")
+        }
+    except Exception:
+        # У разі мережевої помилки повертаємо заглушку для конкретної книги
+        return {"isbn": isbn, "title": "Помилка завантаження", "authors": []}   

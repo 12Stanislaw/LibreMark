@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import asyncio
 from fastapi import FastAPI, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from database import dbEngine, Base, get_db
@@ -81,7 +82,25 @@ async def delete_book(current_user :models.User = Depends(jwt.get_current_user),
             "User" : current_user.login,
             "Book_key" : key}
 
-@app.get("/user/books", response_model= schemas.BookResponse)
-async def show_all_books(current_user :models.User = Depends(jwt.get_current_user),
-                         db: Session = Depends(get_db)):
-    ...
+import asyncio
+
+@app.get("/user/books", response_model=list[schemas.BookResponse])
+async def show_all_books(
+    current_user: models.User = Depends(jwt.get_current_user),
+    db: Session = Depends(get_db)
+):
+    # 1. Отримуємо список ISBN із бази даних
+    user_book_records = services.get_all_isbns(current_user.id_user, db)
+    
+    if not user_book_records:
+        return []
+
+    # 2. Формуємо список завдань для одночасного виконання
+    # Проходимося по кожному запису і готуємо запит до API
+    tasks = [olapi.get_book_by_isbn(record.isbn) for record in user_book_records]
+    
+    # 3. Чекаємо виконання всіх запитів одночасно (Concurrency)
+    # Це працює набагато швидше, ніж цикл for з await
+    books_data = await asyncio.gather(*tasks)
+
+    return books_data

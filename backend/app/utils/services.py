@@ -59,3 +59,7 @@ def authenticate_user(form_data,
     if not user_db or not security.verify_pass(form_data.password, user_db.password):
         return False
     return user_db
+
+def get_all_isbns(id_user: int, db: Session):
+    # Повертає список об'єктів UserIsbn для конкретного юзера
+    return db.query(models.UserIsbn).filter(models.UserIsbn.id_user == id_user).all()
