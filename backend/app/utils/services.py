@@ -6,7 +6,7 @@ import schemas
 import utils.security as security
 
 
-#Перевіряємо унікальність логіну та емейлу користувача
+#---Перевіряємо унікальність логіну та емейлу користувача---
 def check_unique_user(user : schemas.UserCreate,
                    db: Session):
     
@@ -18,6 +18,7 @@ def check_unique_user(user : schemas.UserCreate,
             raise HTTPException(status_code=400, detail="This login is already registered")
         raise HTTPException(status_code=400, detail="This email is already registered")
 
+#---Додаємо користувача в БД---
 def register_user(user: schemas.UserCreate,
         db: Session):
     user_db = models.User(
@@ -30,6 +31,7 @@ def register_user(user: schemas.UserCreate,
     db.refresh(user_db)
     return user_db
 
+#---Додаємо книгу користувачу---
 def add_link(id_user: int,
              key: str,
              saving_state: str,
@@ -45,3 +47,13 @@ def add_link(id_user: int,
     db.refresh(link)
 
     return {"status": "success", "user": id_user, "book_added": key}
+
+#---Автентифікуємо користувача---
+def authenticate_user(form_data, 
+                      db:Session):
+    
+    user_db = db.query(models.User).filter(models.User.login == form_data.username).first()
+
+    if not user_db or not security.verify_pass(form_data.password, user_db.password):
+        return False
+    return user_db
