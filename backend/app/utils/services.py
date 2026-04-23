@@ -1,5 +1,6 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from database import dbEngine, Base, get_db
 import models
 import schemas
@@ -11,7 +12,7 @@ def check_unique_user(user : schemas.UserCreate,
                    db: Session):
     
     #Перевіряємо унікальний логін
-    existing_user = db.query(models.User).filter(models.User.login == user.login, models.User.email == user.email).first()
+    existing_user = db.query(models.User).filter(or_(models.User.login == user.login, models.User.email == user.email)).first()
 
     if existing_user:
         if existing_user.login == user.login:
@@ -21,6 +22,7 @@ def check_unique_user(user : schemas.UserCreate,
 #---Додаємо користувача в БД---
 def register_user(user: schemas.UserCreate,
         db: Session):
+    
     user_db = models.User(
         login = user.login,
         email = user.email,

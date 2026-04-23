@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from argon2 import PasswordHasher
 
 # Створюємо об'єкт хешера
