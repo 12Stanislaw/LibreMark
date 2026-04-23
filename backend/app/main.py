@@ -81,3 +81,7 @@ async def delete_book(current_user :models.User = Depends(jwt.get_current_user),
             "User" : current_user.login,
             "Book_key" : key}
 
+@app.get("/user/books", response_model= schemas.BookResponse)
+async def show_all_books(current_user :models.User = Depends(jwt.get_current_user),
+                         db: Session = Depends(get_db)):
+    ...

@@ -30,3 +30,10 @@ class UserResponse(BaseModel):
     login: str
     email: str
 
+
+class BookResponse(BaseModel):
+    title : str
+    author : str
+    first_publish_year: int
+    language : str
+    details : str
