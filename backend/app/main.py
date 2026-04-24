@@ -66,23 +66,33 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(),
         "access_token": access_token, 
         "token_type": "bearer"}
 
+#---Видаляємо книгу з БД ---
 @app.delete("/users/books")
-async def delete_book(current_user :models.User = Depends(jwt.get_current_user),
-                    title: str = Query(..., min_length=1),
+async def delete_book(id_link: int,
+                    current_user :models.User = Depends(jwt.get_current_user),
                     db: Session = Depends(get_db)):
     
-    key = await olapi.get_by_title(title)
-
-    book_db = db.query(models.UserIsbn).filter(models.UserIsbn.isbn == key, models.UserIsbn.id_user == current_user.id_user).first()
+    if id_link <= 0:
+        raise HTTPException(status_code= 400,
+                            detail= "ID must be grater than 0")
+    book_db = db.query(models.UserIsbn).filter(models.UserIsbn.id_link == id_link, models.UserIsbn.id_user == current_user.id_user).first()
 
     db.delete(book_db)
+    db.commit()
+    
+    remaining_books = db.query(models.UserIsbn).filter(
+        models.UserIsbn.id_user == current_user.id_user
+    ).order_by(models.UserIsbn.id_link).all()
+
+    for index, book in enumerate(remaining_books, start=1):
+        book.id_link = index
+    
     db.commit()
 
     return {"msg" : "Deleted",
             "User" : current_user.login,
-            "Book_key" : key}
+            }
 
-import asyncio
 
 @app.get("/user/books", response_model=list[schemas.BookResponse])
 async def show_all_books(
