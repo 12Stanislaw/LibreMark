@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 import asyncio
 from fastapi import FastAPI, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from database import dbEngine, Base, get_db
+from .database import dbEngine, Base, get_db
 from fastapi.security import OAuth2PasswordRequestForm
 import models
 import schemas
@@ -18,8 +18,9 @@ async def lifespan(app: FastAPI):
     # Дії при вимкненні: закриваємо з'єднання
     await olapi.http_client.aclose()
 
-app = FastAPI(lifespan=lifespan)
 Base.metadata.create_all(bind=dbEngine)
+app = FastAPI(lifespan=lifespan)
+
 
 @app.get("/")
 async def root():

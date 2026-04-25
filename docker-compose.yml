@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      - POSTGRES_USER=fastapi_user
+      - POSTGRES_PASSWORD=ayrton_senna_sempre
+      - POSTGRES_DB=libremark  # <--- Тепер тут правильна назва
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=fastapi_user      # Додаємо сюди, щоб Docker точно
+      - DB_PASSWORD=ayrton_senna_sempre  # знав, куди і з чим стукатись
+      - DB_NAME=libremark         # Це має збігатися з POSTGRES_DB
+      - PYTHONPATH=/code/app
+    env_file:
+      - .env.example
+
+volumes:
+  postgres_data:
