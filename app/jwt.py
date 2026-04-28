@@ -5,8 +5,8 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import get_db # Імпортуй свою функцію отримання сесії
-import models
+from app.database import get_db # Імпортуй свою функцію отримання сесії
+from app import models
 
 # Завантажуємо змінні
 load_dotenv()

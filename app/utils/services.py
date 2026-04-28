@@ -1,23 +1,23 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from database import dbEngine, Base, get_db
-import models
-import schemas
-import utils.security as security
+from app.database import dbEngine, Base, get_db
+import app.models as models
+import app.schemas as schemas
+import app.utils.security as security
 
 
-#---Перевіряємо унікальність логіну та емейлу користувача---
+#---Checking if login and email are unique---
 def check_unique_user(user : schemas.UserCreate,
                    db: Session):
     
-    #Перевіряємо унікальний логін
+    #Check unique login
     existing_user = db.query(models.User).filter(or_(models.User.login == user.login, models.User.email == user.email)).first()
 
     if existing_user:
         if existing_user.login == user.login:
-            raise HTTPException(status_code=400, detail="This login is already registered")
-        raise HTTPException(status_code=400, detail="This email is already registered")
+            raise schemas.LibreMarkException(message = "This login is already registered", status_code = 404)
+        raise schemas.LibreMarkException(message = "This email is already registered", status_code = 404)
 
 #---Додаємо користувача в БД---
 def register_user(user: schemas.UserCreate,

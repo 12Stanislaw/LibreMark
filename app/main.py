@@ -1,15 +1,16 @@
 from contextlib import asynccontextmanager
 import asyncio
-from fastapi import FastAPI, Depends, Query, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Depends, Query, HTTPException,Request
 from sqlalchemy.orm import Session
-from .database import dbEngine, Base, get_db
+from app.database import dbEngine, Base, get_db
 from fastapi.security import OAuth2PasswordRequestForm
-import models
-import schemas
-import jwt
-import utils.services as services
-import utils.security as security
-import utils.olapi as olapi
+from app import models
+from app import schemas
+from app import jwt
+import app.utils.services as services
+import app.utils.security as security
+import app.utils.olapi as olapi
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,14 +19,27 @@ async def lifespan(app: FastAPI):
     # Дії при вимкненні: закриваємо з'єднання
     await olapi.http_client.aclose()
 
-Base.metadata.create_all(bind=dbEngine)
 app = FastAPI(lifespan=lifespan)
+Base.metadata.create_all(bind=dbEngine)
 
+#---Exception handler----
+@app.exception_handler(schemas.LibreMarkException)
+async def libremark_exception_handler(request: Request, exc: schemas.LibreMarkException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": "error",
+            "message": exc.message,
+            "user": "Stanislaw-Admin" # Можна додати системну інфу для себе
+        }
+    )
 
+#---Root---
 @app.get("/")
 async def root():
     return{"msg" : "ok"}
 
+#---Add new user---
 @app.post("/users/",
           response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate,
