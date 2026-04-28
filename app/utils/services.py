@@ -50,13 +50,13 @@ def add_link(id_user: int,
 
     return {"status": "success", "user": id_user, "book_added": key}
 
-#---Автентифікуємо користувача---
+#---Authenticate user---
 def authenticate_user(form_data, 
                       db:Session):
     
     user_db = db.query(models.User).filter(models.User.login == form_data.username).first()
 
-    if not user_db or not security.verify_pass(form_data.password, user_db.password):
+    if not user_db:
         return False
     return user_db
 

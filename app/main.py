@@ -68,10 +68,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(),
     #Перевірка користувача та пароля
     if not user_db or not security.verify_pass(form_data.password, user_db.password):
         
-        raise HTTPException(
-            status_code=401,
-            detail="Невірне ім'я або пароль",
-            headers={"WWW-Authenticate": "Bearer"},
+        raise schemas.LibreMarkException(
+            message="Invalid login or password", 
+            status_code=401
         )
     
      # 4. Створюємо токен (передаємо ім'я в 'sub')
