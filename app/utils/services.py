@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.database import dbEngine, Base, get_db

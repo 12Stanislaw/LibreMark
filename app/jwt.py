@@ -1,4 +1,5 @@
 import os
+from app import schemas as schemas
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
 from jose import JWTError, jwt
@@ -20,6 +21,7 @@ if not SECRET_KEY or not ALGORITHM:
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
 
+#---Create access token--
 def create_access_token(data: dict, expires_delta: timedelta = None):    
     to_encode = data.copy()
     
@@ -36,28 +38,26 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 
-
+#---Get current user---
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Не вдалося перевірити облікові дані",
-        headers={"WWW-Authenticate": "Bearer"},
+    auth_exception = schemas.LibreMarkException(
+        message="Could not validate credentials or user session expired",
+        status_code=401
     )
-
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         login: str = payload.get("sub")
         if login is None:
-            raise credentials_exception
+            raise auth_exception
     except JWTError:
-        raise credentials_exception
+        raise auth_exception
     
     # Шукаємо користувача в базі за ім'ям (або id)
     user = db.query(models.User).filter(models.User.login == login).first()
     
     # Якщо токен валідний, але юзера в базі вже немає (наприклад, видалили)
     if user is None:
-        raise credentials_exception
+        raise auth_exception
         
     return user # ТЕПЕР ПОВЕРТАЄМО ЦІЛИЙ ОБ'ЄКТ

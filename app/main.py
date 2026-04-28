@@ -81,17 +81,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(),
         "access_token": access_token, 
         "token_type": "bearer"}
 
-#---Видаляємо книгу з БД ---
+#---Delete book from database ---
 @app.delete("/users/books")
 async def delete_book(id_link: int,
                     current_user :models.User = Depends(jwt.get_current_user),
                     db: Session = Depends(get_db)):
     
     if id_link <= 0:
-        raise HTTPException(status_code= 400,
-                            detail= "ID must be grater than 0")
+        raise schemas.LibreMarkException(message="ID must be greater than 0", status_code=400)
     book_db = db.query(models.UserIsbn).filter(models.UserIsbn.id_link == id_link, models.UserIsbn.id_user == current_user.id_user).first()
 
+    if not book_db:
+        raise schemas.LibreMarkException(message="Not found link with this ID", status_code=404)
     db.delete(book_db)
     db.commit()
     
@@ -108,7 +109,7 @@ async def delete_book(id_link: int,
             "User" : current_user.login,
             }
 
-
+#---Show all saved books---
 @app.get("/user/books", response_model=list[schemas.BookResponse])
 async def show_all_books(
     current_user: models.User = Depends(jwt.get_current_user),

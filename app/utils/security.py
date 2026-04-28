@@ -1,4 +1,3 @@
-from fastapi import HTTPException, status
 from argon2 import PasswordHasher
 
 # Create hasher

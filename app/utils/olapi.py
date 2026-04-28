@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 import httpx
 from app import schemas
 import os
@@ -59,6 +58,7 @@ async def get_by_title(title: str):
     except Exception as e:
         raise schemas.LibreMarkException(message=f"Internal API error: {str(e)}", status_code=500)
 
+#---Get info about book by ISBN---
 async def get_book_by_isbn(isbn: str):
     # Використовуємо Books API для отримання детальної інформації
     url = "https://openlibrary.org/api/books"
@@ -72,7 +72,10 @@ async def get_book_by_isbn(isbn: str):
         response = await http_client.get(url, params=params)
         
         if response.status_code != 200:
-            return {"isbn": isbn, "title": "Помилка API", "authors": ["Невідомо"]}
+            raise schemas.LibreMarkException(
+                message=f"Open Library API returned error {response.status_code}", 
+                status_code=502
+            )
 
         data = response.json()
         book_key = f"ISBN:{isbn}"
@@ -83,6 +86,12 @@ async def get_book_by_isbn(isbn: str):
 
         book_data = data[book_key]
 
+        if book_key not in data:
+            raise schemas.LibreMarkException(
+                message=f"Detailed information for ISBN {isbn} not found", 
+                status_code=404
+            )
+        
         return {
             "isbn": isbn,
             "title": book_data.get("title", "Без назви"),
@@ -93,6 +102,11 @@ async def get_book_by_isbn(isbn: str):
             "cover": book_data.get("cover", {}).get("large"),
             "pages": book_data.get("number_of_pages")
         }
-    except Exception:
-        # У разі мережевої помилки повертаємо заглушку для конкретної книги
-        return {"isbn": isbn, "title": "Помилка завантаження", "authors": []}   
+    except httpx.TimeoutException:
+        raise schemas.LibreMarkException(message="Connection timed out while fetching book details", status_code=504)
+    except httpx.RequestError:
+        raise schemas.LibreMarkException(message="Network error occurred while contacting Open Library", status_code=503)
+    except schemas.LibreMarkException:
+        raise
+    except Exception as e:
+        raise schemas.LibreMarkException(message=f"Unexpected error: {str(e)}", status_code=500)
