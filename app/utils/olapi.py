@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 import httpx
+from app import schemas
 import os
 from dotenv import load_dotenv
 
@@ -7,7 +8,7 @@ load_dotenv()
 URL = os.getenv("OL_URL")
 http_client = httpx.AsyncClient(timeout=10.0)
 
-#Отримуємо isbn книги за назвою
+#---Look for ISBN by title---
 async def get_by_title(title: str):
     # 1. Формуємо URL та параметри
     # Використовуємо q= замість title= для ширшого пошуку, якщо назва неточна
@@ -29,33 +30,34 @@ async def get_by_title(title: str):
 
         # Якщо отримали 503 або іншу помилку від сервера
         if response.status_code == 503:
-            raise HTTPException(status_code=503, detail="Open Library перевантажена. Спробуйте через хвилину.")
+            raise schemas.LibreMarkException(message = "Open Library API is temporarily overloadeds", status_code = 503)
         
         if response.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Open Library API помилка: {response.status_code}")
+            raise schemas.LibreMarkException(message=f"External API error: {response.status_code}", status_code=502)
 
         data = response.json()
         docs = data.get("docs", [])
 
         if not docs:
-            raise HTTPException(status_code=404, detail="Книгу не знайдено")
+            raise schemas.LibreMarkException(message="Book not found", status_code=404)
 
         # 3. Витягуємо ISBN
         # docs[0] — це найбільш релевантна книга
         isbn_list = docs[0].get("isbn", [])
 
         if not isbn_list:
-            raise HTTPException(status_code=404, detail="Книгу знайдено, але в неї немає ISBN в базі")
+            raise schemas.LibreMarkException(message="No ISBN associated with this title", status_code=404)
+
 
         # Повертаємо перший знайдений ISBN
         return isbn_list[0]
     
-    except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="Не вдалося з'єднатися з сервером Open Library")
+    except (httpx.ConnectError, httpx.ConnectTimeout):
+        raise schemas.LibreMarkException(message="Could not connect to Open Library", status_code=503)
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Сервер Open Library не відповів вчасно")
+        raise schemas.LibreMarkException(message="Open Library response timed out", status_code=504)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Внутрішня помилка: {str(e)}")
+        raise schemas.LibreMarkException(message=f"Internal API error: {str(e)}", status_code=500)
 
 async def get_book_by_isbn(isbn: str):
     # Використовуємо Books API для отримання детальної інформації

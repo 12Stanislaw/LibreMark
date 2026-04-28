@@ -16,10 +16,10 @@ def check_unique_user(user : schemas.UserCreate,
 
     if existing_user:
         if existing_user.login == user.login:
-            raise schemas.LibreMarkException(message = "This login is already registered", status_code = 404)
-        raise schemas.LibreMarkException(message = "This email is already registered", status_code = 404)
+            raise schemas.LibreMarkException(message = "This login is already registered", status_code = 409)
+        raise schemas.LibreMarkException(message = "This email is already registered", status_code = 409)
 
-#---Додаємо користувача в БД---
+#---Adding user to database---
 def register_user(user: schemas.UserCreate,
         db: Session):
     
@@ -33,7 +33,7 @@ def register_user(user: schemas.UserCreate,
     db.refresh(user_db)
     return user_db
 
-#---Додаємо книгу користувачу---
+#---Adding link to database---
 def add_link(id_user: int,
              key: str,
              saving_state: str,

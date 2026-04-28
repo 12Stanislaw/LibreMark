@@ -48,7 +48,7 @@ def create_user(user: schemas.UserCreate,
     new_user = services.register_user(user, db)
 
     return new_user
-
+#---Add new book---
 @app.post("/users/books/")
 async def save_book(current_user :models.User = Depends(jwt.get_current_user),
                     title: str = Query(..., min_length=1),
@@ -59,6 +59,7 @@ async def save_book(current_user :models.User = Depends(jwt.get_current_user),
     link = services.add_link(current_user.id_user, key, saving_state, db)
     return link
 
+#---Login---
 @app.post("/users/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), 
     db: Session = Depends(get_db)):
