@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, Enum as SQLEnum
 from app.database import Base
-
+from app import schemas as schemas
 
 class User(Base):
     __tablename__ = "users"
@@ -20,7 +20,7 @@ class UserIsbn(Base):
     id_link : Mapped[int] = mapped_column(primary_key=True, autoincrement = True)
     id_user: Mapped[int] = mapped_column(ForeignKey(User.id_user))
     isbn: Mapped[str] = mapped_column(String, nullable=False)
-    saving_state : Mapped[str] = mapped_column(String, nullable=False)
+    saving_state : Mapped[schemas.SavingState] = mapped_column(SQLEnum(schemas.SavingState), nullable=False)
 
     def __repr__(self):
         return f"<UserIsbn(user_id={self.user_id}, isbn='{self.isbn}')>"

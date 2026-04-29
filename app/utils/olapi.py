@@ -98,7 +98,7 @@ async def get_book_by_isbn(isbn: str):
             "authors": [a.get("name") for a in book_data.get("authors", [])],
             "publish_date": str(book_data.get("publish_date", "N/A")),
             "languages": [l.get("name") for l in book_data.get("languages", [])],
-            "synopsis": book_data.get("notes") or "Опис недоступний",
+            "synopsis": book_data.get("notes") or "Synopsis is not available",
             "cover": book_data.get("cover", {}).get("large"),
             "pages": book_data.get("number_of_pages")
         }

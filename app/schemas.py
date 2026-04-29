@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import List, Optional
+import enum
 
 class UserCreate(BaseModel):
     login: str = Field(
@@ -50,3 +51,10 @@ class LibreMarkException(Exception):
     def __init__(self, message: str, status_code: int = 400):
         self.message = message
         self.status_code = status_code
+
+class SavingState(str, enum.Enum):
+    WANT_TO_READ = "want to read"
+    READING = "reading"
+    COMPLETED = "completed"
+    DROPPED = "dropped"
+    ON_LATER = "on later"

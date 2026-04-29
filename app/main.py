@@ -52,7 +52,7 @@ def create_user(user: schemas.UserCreate,
 @app.post("/users/books/")
 async def save_book(current_user :models.User = Depends(jwt.get_current_user),
                     title: str = Query(..., min_length=1),
-                    saving_state: str = Query(..., min_length=1),
+                    saving_state: schemas.SavingState = Query(...),
                     db: Session = Depends(get_db)):
     
     key = await olapi.get_by_title(title)
