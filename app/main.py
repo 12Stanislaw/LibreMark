@@ -111,12 +111,12 @@ async def delete_book(id_link: int,
 
 #---Show all saved books---
 @app.get("/user/books", response_model=list[schemas.BookResponse])
-async def show_all_books(
-    current_user: models.User = Depends(jwt.get_current_user),
-    db: Session = Depends(get_db)
-):
-    # 1. Отримуємо список ISBN із бази даних
-    user_book_records = services.get_all_isbns(current_user.id_user, db)
+async def show_all_books(skip: int = Query(0, ge=0),     
+                        limit: int = Query(10, ge=1, le=50),
+                        current_user: models.User = Depends(jwt.get_current_user),
+                        db: Session = Depends(get_db)):
+    
+    user_book_records = services.get_all_isbns(current_user.id_user, db, skip = skip, limit = limit)
     
     if not user_book_records:
         return []
@@ -133,10 +133,12 @@ async def show_all_books(
 
 #---Get all books by specific saving state
 @app.get("/books/")
-async def get_books_by_state(current_user :models.User = Depends(jwt.get_current_user),
+async def get_books_by_state(skip: int = Query(0, ge=0),
+                             limit: int = Query(10, ge=1, le=50),
+                             current_user :models.User = Depends(jwt.get_current_user),
                              saving_state: schemas.SavingState = Query(...),
                              db: Session = Depends(get_db)):
-    isbns = services.get_isbns_by_state(current_user.id_user, saving_state, db)
+    isbns = services.get_isbns_by_state(current_user.id_user, saving_state, db, skip = skip, limit = limit)
 
     if not isbns:
         return []
