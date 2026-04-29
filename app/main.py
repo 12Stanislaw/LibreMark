@@ -130,3 +130,21 @@ async def show_all_books(
     books_data = await asyncio.gather(*tasks)
 
     return books_data
+
+#---Get all books by specific saving state
+@app.get("/books/")
+async def get_books_by_state(current_user :models.User = Depends(jwt.get_current_user),
+                             saving_state: schemas.SavingState = Query(...),
+                             db: Session = Depends(get_db)):
+    isbns = services.get_isbns_by_state(current_user.id_user, saving_state, db)
+
+    if not isbns:
+        return []
+    
+    tasks = [olapi.get_book_by_isbn(record.isbn) for record in isbns]
+
+    books_data = await asyncio.gather(*tasks)
+
+    return books_data
+
+

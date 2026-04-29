@@ -59,7 +59,13 @@ def authenticate_user(form_data,
     if not user_db:
         return False
     return user_db
-
+#---Get all isbns---
 def get_all_isbns(id_user: int, db: Session):
     # Повертає список об'єктів UserIsbn для конкретного юзера
     return db.query(models.UserIsbn).filter(models.UserIsbn.id_user == id_user).all()
+
+#---Get isbnsby saving state---
+def get_isbns_by_state(id_user: int,saving_state: str ,db: Session):
+    # Повертає список об'єктів UserIsbn для конкретного юзера
+    return db.query(models.UserIsbn).filter(models.UserIsbn.id_user == id_user, 
+                                            models.UserIsbn.saving_state == saving_state).all()
