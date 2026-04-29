@@ -1,26 +1,24 @@
 import httpx
 from app import schemas
 import os
+import logging
 from dotenv import load_dotenv
+from app.utils.cache_config import book_details_cache
 
 load_dotenv()
 URL = os.getenv("OL_URL")
 http_client = httpx.AsyncClient(timeout=10.0)
-book_cache = {}
+logger = logging.getLogger(__name__)
 
 #---Look for ISBN by title---
 async def get_by_title(title: str):
-    # 1. Формуємо URL та параметри
-    # Використовуємо q= замість title= для ширшого пошуку, якщо назва неточна
     url = "https://openlibrary.org/search.json"
     params = {
         "q": title, 
         "limit": 1,
-        "fields": "isbn,title,author_name" # Просимо тільки те, що треба
+        "fields": "isbn,title,author_name"
     }
     
-    # 2. Обов'язкові заголовки (User-Agent)
-    # Open Library часто кидає 503, якщо бачить "голий" httpx клієнт
     headers = {
         "User-Agent": "MyLibraryApp/1.0 (contact: your-email@example.com)"
     }
@@ -28,7 +26,6 @@ async def get_by_title(title: str):
     try:
         response = await http_client.get(url, params=params, headers=headers)
 
-        # Якщо отримали 503 або іншу помилку від сервера
         if response.status_code == 503:
             raise schemas.LibreMarkException(message = "Open Library API is temporarily overloadeds", status_code = 503)
         
@@ -41,15 +38,11 @@ async def get_by_title(title: str):
         if not docs:
             raise schemas.LibreMarkException(message="Book not found", status_code=404)
 
-        # 3. Витягуємо ISBN
-        # docs[0] — це найбільш релевантна книга
         isbn_list = docs[0].get("isbn", [])
 
         if not isbn_list:
             raise schemas.LibreMarkException(message="No ISBN associated with this title", status_code=404)
 
-
-        # Повертаємо перший знайдений ISBN
         return isbn_list[0]
     
     except (httpx.ConnectError, httpx.ConnectTimeout):
@@ -61,17 +54,17 @@ async def get_by_title(title: str):
 
 #---Get info about book by ISBN---
 async def get_book_by_isbn(isbn: str):
-    # Використовуємо Books API для отримання детальної інформації
+
+    if isbn in book_details_cache:
+        logger.info("Cache hit for %s", isbn)
+        return book_details_cache[isbn]
+    
     url = "https://openlibrary.org/api/books"
     params = {
         "bibkeys": f"ISBN:{isbn}",
         "format": "json",
         "jscmd": "data"
     }
-
-    if isbn in book_cache:
-        print(f"--- Cache HIT for ISBN: {isbn} ---") # Для відладки в терміналі
-        return book_cache[isbn]
     
     try:
         response = await http_client.get(url, params=params)
@@ -90,12 +83,6 @@ async def get_book_by_isbn(isbn: str):
             return {"isbn": isbn, "title": "Дані відсутні", "authors": ["N/A"], "synopsis": "Опис відсутній"}
 
         book_data = data[book_key]
-
-        if book_key not in data:
-            raise schemas.LibreMarkException(
-                message=f"Detailed information for ISBN {isbn} not found", 
-                status_code=404
-            )
         
         result = {
             "isbn": isbn,
@@ -107,7 +94,7 @@ async def get_book_by_isbn(isbn: str):
             "cover": book_data.get("cover", {}).get("large"),
             "pages": book_data.get("number_of_pages")
         }
-        book_cache[isbn] = result
+        book_details_cache[isbn] = result
         return result
     
     except httpx.TimeoutException:
