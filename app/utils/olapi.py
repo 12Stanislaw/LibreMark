@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 URL = os.getenv("OL_URL")
 http_client = httpx.AsyncClient(timeout=10.0)
+book_cache = {}
 
 #---Look for ISBN by title---
 async def get_by_title(title: str):
@@ -68,6 +69,10 @@ async def get_book_by_isbn(isbn: str):
         "jscmd": "data"
     }
 
+    if isbn in book_cache:
+        print(f"--- Cache HIT for ISBN: {isbn} ---") # Для відладки в терміналі
+        return book_cache[isbn]
+    
     try:
         response = await http_client.get(url, params=params)
         
@@ -92,7 +97,7 @@ async def get_book_by_isbn(isbn: str):
                 status_code=404
             )
         
-        return {
+        result = {
             "isbn": isbn,
             "title": book_data.get("title", "Без назви"),
             "authors": [a.get("name") for a in book_data.get("authors", [])],
@@ -102,6 +107,9 @@ async def get_book_by_isbn(isbn: str):
             "cover": book_data.get("cover", {}).get("large"),
             "pages": book_data.get("number_of_pages")
         }
+        book_cache[isbn] = result
+        return result
+    
     except httpx.TimeoutException:
         raise schemas.LibreMarkException(message="Connection timed out while fetching book details", status_code=504)
     except httpx.RequestError:
