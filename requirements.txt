@@ -30,3 +30,5 @@ email-validator
 enum
 cachetools
 logging
+pytest
+pytest-asyncio
