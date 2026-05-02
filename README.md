@@ -76,4 +76,3 @@ ALGORITHM=HS256
 - Refresh tokens for better auth security
 - Redis caching for OpenLibrary responses
 - Rate limiting to protect API
-- Unit and integration tests
